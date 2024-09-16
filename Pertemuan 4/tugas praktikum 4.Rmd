@@ -1,0 +1,431 @@
+---
+title: "Latihan pertemuan 4-MPDW"
+author: "Hafidz Candra Ramadhan_G1401221079"
+date: "2024-09-10"
+output: rmdformats::readthedown
+---
+
+# White Noise
+
+```{r}
+set.seed(1234)
+wn <- rnorm(300)
+ts.plot(wn)
+
+n<-length(wn)
+n
+```
+
+# Proses MA(2)
+
+*Bangkitkan model MA(2) dengan 𝜃1 = 0.4 dan 𝜃2 = 0.6 sebanyak 300 data (Manual dan dengan arima.sim)*
+
+Proses MA dapat dituliskan sebagai berikut:
+
+$$
+y_{t} = c + e_t + \theta_{1}e_{t-1} + \theta_{2}e_{t-2} + \dots + \theta_{q}e_{t-q} = c+{e_t+\sum_{i=1}^p \theta_ie_{t-i}}
+$$ Terlihat bahwa $e_t$, atau *white noise*, berperan penting dalam pembangkitan proses MA.
+Pada kesempatana kali ini, kita akan membahas proses MA(2) yang memiliki dua parameter moving average, yaitu $0.4$ dan $0.6$, sehingga menghasilkan persamaan sebagai berikut :
+
+$$
+y_{t} = e_t -0.4e_{t-1} -0.6e_{t-2}
+$$
+
+## Dengan Manual
+
+```{r}
+ma2 <- c(1:n)
+ma2[1] <- wn[1]
+ma2[2] <- wn[2]+0.4*wn[1]
+for (i in 3:n) {
+  ma2[i]<-wn[i]+0.4*wn[i-1]+0.6*wn[i-2]
+  }
+ma2
+```
+## Dengan Arima.sim()
+
+```{r}
+ma2sim <- arima.sim(list(order=c(0,0,2), ma=c(0.4,0.6)), n=300)
+ma2sim
+```
+
+# Karakterisitik MA(2)
+
+*Buat plot time series, plot ACF, plot PACF dan plot EACF. Idenifikasi apakah data tersebut stasioner*
+
+## Plot Time Series
+```{r}
+ts.plot(ma2)
+```
+Dari plot tersebut terlihat bahwa data MA(2) dibangkitkan stasioner dalam rataan
+
+## Plot ACF
+
+```{r}
+acf(ma2)
+```
+Berdasarkan plot ACF tersebut, terlihat bahwa plot ACF **cuts off** setelah lag kedua
+
+## Plot PACF
+
+```{r}
+pacf(ma2)
+```
+Berdasarkan plot PACF tersebut, terlihat bahwa plot PACF **tails off**
+
+## Plot EACF
+
+```{r}
+TSA::eacf(ma2)
+```
+Berdasarakan plot EACF, terlihat bahwa segitiga nol berada pada ordo AR(0) dan ordo MA(2)
+
+# Scatterplot Antar Lag MA(2)
+
+*Buat scatterplot antara 𝑌𝑡 dengan 𝑌𝑡−1, 𝑌𝑡 dengan 𝑌𝑡−2 serta 𝑌𝑡 dengan 𝑌𝑑−3*
+
+## Korelasi $Y_t$ dengan $Y_{t-1}$
+```{r}
+#Yt
+yt_ma2 <- ma2[2:300]
+yt_ma2
+
+#Yt-1
+yt_1_ma2 <- ma2[1:299]
+yt_1_ma2
+
+#plot Yt dengan Yt-1
+plot(yt_ma2,yt_1_ma2)
+```
+Berdasarkan scatterplot tersebut, terlihat bahwa data MA(2) memiliki korelasi positif yang sedikit rendah antara $Y_t$ dengan $Y_{t-1}$.
+
+```{r}
+#korelasi Yt dengan Yt-1
+cor(yt_ma2,yt_1_ma2)
+```
+Saat dicek dengan korelasi secara teoritis hasil yang hampir mirip dengan simulasi, yaitu
+
+$$
+\rho_1=\frac{-\theta+\theta_1\theta_2}{1+(\theta_1)^2+(\theta_2)^2}=\frac{-(-0.4)*(-0.4)*(-0.6)}{1+(-0.4)^2+(-0.6)^2}=0.42
+$$
+
+## Korelasi $Y_t$ dengan $Y_{t-2}$
+```{r}
+#Yt
+yt_ma2 <- ma2[3:300]
+
+#Yt-2
+yt_2_ma2 <- ma2[1:298]
+
+#plot Yt dengan Yt-2
+plot(yt_ma2,yt_2_ma2)
+```
+
+Berdasarkan scatterplot tersebut, terlihat bahwa data MA(2) antara $Y_t$ dengan $Y_{t-2}$ memiliki korelasi positif yang lebih rendah dari $Y_t$ dengan $Y_{t-1}$.
+
+```{r}
+#korelasi Yt dengan Yt-2
+cor(yt_ma2,yt_2_ma2)
+```
+
+## Korelasi $Y_t$ dengan $Y_{t-3}$
+```{r}
+#Yt
+yt_ma2 <- ma2[4:300]
+
+#Yt-3
+yt_3_ma2 <- ma2[1:297]
+
+#plot Yt dengan Yt-3
+plot(yt_ma2,yt_3_ma2)
+```
+Berdasarkan scatterplot tersebut, terlihat bahwa data MA(2) cenderung tidak memiliki korelasi antara $Y_t$ dengan $Y_{t-3}$. Hal ini menandakan bahwa data MA(2) memiliki maksimum korelasi di ordo ke 2
+
+```{r}
+#korelasi Yt dengan Yt-3
+cor(yt_ma2,yt_3_ma2)
+```
+
+# Proses AR(2)
+
+*Bangkitkan model AR(2) dengan 𝜙1 = 0.5 dan 𝜙2 = 0.2 sebanyak 300 data (Manual dan dengan arima.sim)*
+
+Proses AR dapat dituliskan sebagai berikut:
+
+$$ y_{t} = c + e_t + \phi_{1}Y_{t-1} + \phi_{2}Y_{t-2} + \dots + \phi_{q}Y_{t-q} = c+{e_t+\sum_{i=1}^p \phi_iY_{t-i}} $$ 
+
+Terlihat bahwa $Y_t$ berperan penting dalam pembangkitan proses AR.
+
+Pada kesempatan kali ini, kita akan membahas proses AR(2) yang memiliki dua parameter autoregresi, yaitu $0.5$ dan $0.2$, sehingga menghasilkan persamaan sebagai berikut :
+
+$$
+y_{t} = e_t + {0.5}Y_{t-1} + {0.2}Y_{t-2}
+$$
+
+## Dengan Manual
+
+```{r}
+ar2 <- c(1:n) 
+ar2[1] <- wn[1]
+ar2[2] <- wn[2]+0.5*ar2[1]
+for (i in 3:n) {ar2[i]<-wn[i]+0.5*ar2[i-1]+0.2*ar2[i-2]}
+ar2
+```
+
+## Dengan Arima.sim()
+
+```{r}
+ar2sim <- arima.sim(list(order=c(2,0,0), ar2=c(0.5,0.2)), n=300)
+ar2sim
+```
+
+# Karakterisitik AR(2)
+
+*Buat plot time series, plot ACF, plot PACF dan plot EACF. Idenifikasi apakah data tersebut stasioner*
+
+## Plot Time Series
+
+```{r}
+ts.plot(ar2)
+```
+Dari plot tersebut terlihat bahwa data AR(2) dibangkitkan stasioner dalam rataan
+
+## Plot ACF
+
+```{r}
+acf(ar2)
+```
+Berdasarkan plot ACF tersebut, terlihat bahwa plot ACF **tails off**
+
+## Plot PACF
+
+```{r}
+pacf(ar2)
+```
+Berdasarkan plot PACF tersebut, terlihat bahwa plot PACF **cuts off** setelah lag kedua
+
+## Plot EACF
+
+```{r}
+TSA::eacf(ar2)
+```
+Berdasarkan plot EACF, terlihat bahwa segitiga nol berada pada ordo AR(2) dan ordo MA(1)
+
+# Scatterplot Antar Lag AR(2)
+
+*Buat scatterplot antara 𝑌𝑡 dengan 𝑌𝑡−1, 𝑌𝑡 dengan 𝑌𝑡−2 serta 𝑌𝑡 dengan 𝑌𝑡−3*
+
+## Korelasi $Y_t$ dengan $Y_{t-1}$
+
+```{r}
+#Yt
+yt_ar2 <- ar2[2:300]
+yt_ar2
+
+#Yt-1
+yt_1_ar2 <- ar2[1:299]
+yt_1_ar2
+
+#plot Yt dengan Yt-1
+plot(yt_ar2,yt_1_ar2)
+```
+Berdasarakan scatterplot tersebut, terlihat bahwa data AR(2) memiliki korelasi positif yang cukup tinggi antara $Y_t$ dengan $Y_{t-1}$.
+
+```{r}
+#korelasi Yt dengan Yt-1
+cor(yt_ar2,yt_1_ar2)
+
+```
+Saat dicek dengan korelasi secara teoritis hasil yang hampir mirip dengan simulasi, yaitu
+
+$$
+\rho_1=\frac{-\phi_1}{1+(-\phi_2)^2}=\frac{-(-0.5)}{1+(-0.2)^2}=0.625
+$$
+
+## Korelasi $Y_t$ dengan $Y_{t-2}$
+
+```{r}
+#Yt
+yt_ar2 <- ar2[3:300]
+yt_ar2
+
+#Yt-2
+yt_2_ar2 <- ar2[1:298]
+yt_2_ar2
+
+#plot Yt dengan Yt-2
+plot(yt_ar2,yt_2_ar2)
+```
+Berdsarkan scatterplot tersebut, terlihat bahwa data AR(2) antara $Y_t$ dengan $Y_{t-2}$ memiliki korelasi positif yang lebih rendah dari $Y_t$ dengan $Y_{t-1}$.
+
+```{r}
+#korelasi Yt dengan Yt-2
+cor(yt_ar2,yt_2_ar2)
+```
+
+## Korelasi $Y_t$ dengan $Y_{t-3}$
+
+```{r}
+#Yt
+yt_ar2 <- ar2[4:300]
+yt_ar2
+
+#Yt-3
+yt_3_ar2 <- ar2[1:297]
+yt_3_ar2
+
+#plot Yt dengan Yt-3
+plot(yt_ar2,yt_3_ar2)
+```
+Berdasarakan scatterplot tersebut, terlihat bahwa data AR(2) cenderung tidak memiliki korelasi antara $Y_t$ dengan $Y_{t-3}$.
+
+```{r}
+#korelasi Yt dengan Yt-3
+cor(yt_ar2,yt_3_ar2)
+```
+
+# Proses ARMA(2,2)
+
+*Bangkitkan model ARMA(2,2) dengan 𝜃1 = 0.4, 𝜃2 = 0.6 ,𝜙1 = 0.5 dan 𝜙2 = 0.2 sebanyak 300 data (Manual dan arima.sim)*
+
+bentuk umum data berpola ARMA.
+
+$$
+y_{t} = c + \sum_{i=1}^p \phi_{i}y_{t-i} + \sum_{j=1}^q e_{t-j}+ e_{t}
+$$
+
+## Dengan Manual
+```{r}
+phi1 = 0.5
+phi2 = 0.2 
+theta1 = 0.4
+theta2 = 0.6 
+
+arma22 <- c(1:n)
+arma22[1] <- wn[1]
+arma22[2] <- wn[2]+phi1*arma22[1]
+for (i in 3:n) {
+  arma22[i]<-wn[i]+phi1*arma22[i-1]+phi2*arma22[i-2]-theta1*wn[i-1]-theta2*wn[i-2]
+}
+arma22
+```
+## Dengan Arima.sim()
+```{r}
+armasim22 <- arima.sim(list(order=c(2,0,2), ar=c(0.5,0.2), ma=c(0.4,0.6)), n=300)
+armasim22
+```
+# Karakterisitik ARMA(2,2)
+
+*Buat plot time series, plot ACF, plot PACF dan plot EACF. Idenifikasi apakah data tersebut stasioner*
+
+## Plot Time Series
+```{r}
+par(mfrow=c(1,2))
+ts.plot(arma22)
+ts.plot(armasim22)
+```
+
+Dari plot tersebut terlihat bahwa data ARMA(2,2) dibangkitkan stasioner dalam rataan
+
+## Plot ACF
+```{r}
+par(mfrow=c(1,2))
+acf(arma22)
+acf(armasim22)
+```
+
+Berdasarkan plot ACF tersebut, baik data bangkitan secara manual maupun secara armasim terlihat bahwa plot ACF  memiliki pola **tails off**.
+
+## Plot PACF
+```{r}
+par(mfrow=c(1,2))
+pacf(arma22)
+pacf(armasim22)
+```
+
+Berdasarkan plot PACF tersebut, baik data bangkitan secara manual maupun secara armasim terlihat bahwa plot PACF  memiliki pola **tails off**
+
+## Plot EACF
+```{r}
+TSA::eacf(arma22)
+TSA::eacf(armasim22)
+```
+Pada data yang dibangkitkan secara manual diperoleh pola segitiga 0 pada ordo AR(1) dan MA(2). Namun, untuk data yang dibangkitkan dengan armasim diperoleh pola segitiga 0 pada ordo AR(2)dan MA(2). Namun, sewaktu-waktu data yang dibangkitkan dengan armasim tidak memberikan hasil yang sama. Hali ini disebabkan data yang dibangkitkan dengan armasim tidak dibangkitkan dengan asumsi kenormalan data karena data yang digunakan adalah acak.
+
+# Scatterplot Antar Lag ARMA(2,2)
+
+*Buat scatterplot antara 𝑌𝑡 dengan 𝑌𝑡−1, 𝑌𝑡 dengan 𝑌𝑑−2 serta 𝑌𝑡 dengan 𝑌𝑑−3*
+
+## Korelasi $Y_t$ dengan $Y_{t-1}$
+```{r}
+#Yt
+yt_arma22 <- arma22[2:300]
+yt_arma22
+
+#Yt-1
+yt_1_arma22 <- arma22[1:299]
+yt_1_arma22
+
+#plot Yt dengan Yt-1
+plot(yt_arma22,yt_1_arma22)
+```
+
+Berdasarkan scatterplot tersebut, terlihat bahwa data ARMA(2,2) memiliki korelasi positif yang sangat kecil antara $Y_t$ dengan $Y_{t-1}$.
+```{r}
+#korelasi Yt dengan Yt-1
+cor(yt_arma22,yt_1_arma22)
+```
+Saat dicek dengan korelasi secara teoritis hasil yang hampir mirip dengan simulasi, yaitu
+$$
+\rho_1=\frac{-\phi_1*(1+\theta_1*\theta_2)+\phi_1*\theta_1}{1+(\theta_1)^2+(\theta_2)^2}=\frac{-0.4*(1+0.5*0.2)+0.4*0.5}{1+(0.5)^2+(0.2)^2}=0.5736
+$$
+
+## Korelasi $Y_t$ dengan $Y_{t-2}$
+```{r}
+#Yt
+yt_arma22 <- arma22[3:300]
+
+#Yt-2
+yt_2_arma22 <- arma22[1:298]
+
+#plot Yt dengan Yt-2
+plot(yt_arma22,yt_2_arma22)
+```
+
+Berdasarkan scatterplot tersebut, terlihat bahwa data ARMA(2,2) antara $Y_t$ dengan $Y_{t-2}$ memiliki korelasi negatif yang sangat kecil.
+```{r}
+#korelasi Yt dengan Yt-2
+cor(yt_arma22,yt_2_arma22)
+```
+
+## Korelasi $Y_t$ dengan $Y_{t-3}$
+```{r}
+#Yt
+yt_arma22 <- arma22[4:300]
+
+#Yt-3
+yt_3_arma22 <- arma22[1:297]
+
+#plot Yt dengan Yt-3
+plot(yt_arma22,yt_3_arma22)
+```
+
+Berdasarkan scatterplot tersebut, terlihat bahwa data ARMA(2,2) cenderung tidak memiliki korelasi antara $Y_t$ dengan $Y_{t-3}$.
+```{r}
+#korelasi Yt dengan Yt-3
+cor(yt_arma22,yt_3_arma22)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
