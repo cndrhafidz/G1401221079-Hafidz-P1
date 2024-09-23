@@ -1,0 +1,190 @@
+---
+title: "Latihan MPDW"
+author: "Hafidz Candra Ramadhan_G1401221079"
+date: "2024-09-17"
+output: rmdformats::readthedown
+---
+
+# Read Data
+
+```{r}
+data <- read.csv("D:\\IPB\\Statistika Sem 5\\MPDW (Deret Waktu)\\Data Jumlah Penumpang Transjakarta Harian Tahun 2023-2024.csv", sep=";")
+head(data)
+```
+
+# Data Utuh
+
+```{r}
+#hanya mengambil data pembagian tugas kelompok
+utuh <- data[219:327,]
+head(utuh)
+```
+
+## Data Time Series
+
+```{r}
+utuh.ts <- utuh$jumlah_penumpang_transjakarta
+utuh.ts
+```
+
+## Plot Time Series
+
+```{r}
+ts.plot(utuh.ts)
+```
+Dari grafik terlihat bahwa data memiliki pola musiman
+
+
+## Plot ACF
+```{r}
+par(mfrow=c(1,2))
+acf(utuh.ts)
+acf(utuh.ts, lag.max=109)
+```
+Dari plot ACF terlihat bahwa data memiliki pola musiman
+
+## Plot PACF
+```{r}
+par(mfrow=c(1,2))
+pacf(utuh.ts)
+pacf(utuh.ts, lag.max=109)
+```
+Dari plot PACF juga terlihat bahwa data memiliki pola musiman
+
+## Uji ADF
+```{r}
+library(tseries)
+adf.test(utuh.ts)
+```
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Berdasarkan uji ADF tersebut, didapat *p-value* sebesar 0.01 yang lebih kecil dari taraf nyata 5% sehingga tolak $H_0$ dan menandakan bahwa data stasioner dalam rataan.
+
+## Plot Box-Cox
+```{r}
+library(MASS)
+index <- 1:length(utuh.ts)
+bc <- boxcox(utuh.ts ~ index, lambda=seq(-2, 5, 0.1))
+#Nilai Rounded Lambda
+lambda <- bc$x[which.max(bc$y)]
+lambda
+#SK
+bc$x[bc$y > max(bc$y) - 1/2 * qchisq(.95,1)]
+```
+Dari plot Box-Cox gambar di atas menunjukkan nilai *rounded value* ($\lambda$) optimum sebesar **2,45** dan pada selang kepercayaan 95% nilai memiliki batas bawah **1,67** dan batas atas **3.23**. Selang tersebut tidak memuat nilai satu sehingga dapat dikatakan bahwa data bangkitan tidak stasioner dalam ragam.
+
+# Partisi Data : Bagian 1
+
+```{r}
+partisi1 <- utuh.ts[1:55]
+partisi1
+```
+
+## Plot Time Series Partisi 1
+
+```{r}
+ts.plot(partisi1)
+```
+Dari grafik terlihat bahwa data memiliki pola musiman
+
+## Plot ACF Partisi 1
+```{r}
+par(mfrow=c(1,2))
+acf(partisi1)
+acf(partisi1, lag.max=55)
+```
+Dari plot ACF terlihat bahwa data memiliki pola musiman
+
+## Plot PACF Partisi 1
+```{r}
+par(mfrow=c(1,2))
+pacf(partisi1)
+pacf(partisi1, lag.max=55)
+```
+Dari plot PACF juga terlihat bahwa data memiliki pola musiman
+
+## Uji ADF Partisi 1
+```{r}
+adf.test(partisi1)
+```
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Berdasarkan uji ADF tersebut, didapat *p-value* sebesar 0.47 yang lebih kecil dari taraf nyata 5% sehingga tolak $H_0$ dan menandakan bahwa data stasioner dalam rataan.
+
+
+## Plot Box-Cox Partisi 1
+```{r}
+index <- 1:length(partisi1)
+bc <- boxcox(partisi1 ~ index, lambda=seq(-2, 5, 0.1))
+#Nilai Rounded Lambda
+lambda <- bc$x[which.max(bc$y)]
+lambda
+#SK
+bc$x[bc$y > max(bc$y) - 1/2 * qchisq(.95,1)]
+```
+Dari plot Box Cox gambar di atas menunjukkan nilai *rounded value* ($\lambda$) optimum sebesar **1,46** dan pada selang kepercayaan 95% nilai memiliki batas bawah **0.61** dan batas atas **2,38**. Selang tersebut memuat nilai satu sehingga dapat dikatakan bahwa data bangkitan stasioner dalam ragam.
+
+# Partisi Data : Bagian 2
+```{r}
+partisi2 <- utuh.ts[56:109]
+partisi2
+```
+
+## Plot Time Series Partisi 2
+```{r}
+ts.plot(partisi2)
+```
+Dari grafik terlihat bahwa data memiliki pola musiman
+
+
+## Plot ACF Partisi 2
+```{r}
+par(mfrow=c(1,2))
+acf(partisi2)
+acf(partisi2, lag.max=55)
+```
+Dari plot ACF terlihat bahwa data memiliki pola musiman
+
+## Plot PACF Partisi 2
+```{r}
+par(mfrow=c(1,2))
+pacf(partisi2)
+pacf(partisi2, lag.max=55)
+```
+
+## Uji ADF Partisi 2
+```{r}
+adf.test(partisi2)
+```
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Dari uji ADF tersebut, didapat *p-value* sebesar 0.01 yang lebih kecil dari taraf nyata 5% sehingga tolak $H_0$ dan menandakan bahwa data stasioner dalam rataan.
+
+## Plot Box-Cox Partisi 2
+```{r}
+index <- 1:length(partisi2)
+bc <- boxcox(partisi2 ~ index, lambda=seq(-2, 10, 0.1))
+#Nilai Rounded Lambda
+lambda <- bc$x[which.max(bc$y)]
+lambda
+#SK
+bc$x[bc$y > max(bc$y) - 1/2 * qchisq(.95,1)]
+```
+Dari plot Box Cox gambar di atas menunjukkan nilai *rounded value* ($\lambda$) optimum sebesar **5,9** dan pada selang kepercayaan 95% nilai memiliki batas bawah **3,8** dan batas atas **8,1**. Selang tersebut tidak memuat nilai satu sehingga dapat dikatakan bahwa data bangkitan tidak stasioner dalam ragam.
+
+
+
+
+
+
+
+
+
+
+
