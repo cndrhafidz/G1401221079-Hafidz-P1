@@ -1,0 +1,201 @@
+---
+title: "Tugas Praktikum 6&7"
+author: "Hafidz Candra Ramadhan_G1401221079"
+date: "2024-09-28"
+output: rmdformats::readthedown
+---
+
+# Packages
+
+```{r}
+library(ggplot2)
+library(tsibble)
+library(tseries)
+library(MASS)
+library(forecast)
+library(TSA)
+library(TTR)
+library(aTSA)
+library(graphics)
+```
+
+# Data
+
+Data yang digunakan adalah data pembagian dari tugas kelompok. Data tersebut merupakan data jumlah penumpang Transjakarta harian tahun 2023-2024. Data tersebut berupa data deret waktu yang terdiri dari 109 periode.
+
+```{r}
+dt <- read.csv("D:\\IPB\\Statistika Sem 5\\MPDW (Deret Waktu)\\Data Jumlah Penumpang Transjakarta Harian Tahun 2023-2024.csv", sep =";")
+dt <- dt[219:327,2]
+dt
+```
+
+# Eksplorasi Data
+
+## Plot Data Penuh
+
+Sebelum masuk dalam tahap pemodelan, dilakukan eksplorasi data dengan plot deret waktu untuk melihat pola data.
+
+```{r}
+plot.ts(dt, lty=1, xlab="waktu", ylab="Jumlah Penumpang", main="Plot Jumlah Penumpang Transjakarta Harian")
+```
+
+Berdasarkan plot data deret waktu di atas, terlihat data membentuk pola *seasonal* dan cenderung bergerak menyebar di sekitar nilai tengahnya 8e+05 sehingga bisa disimpulkan data tersebut stasioner dalam rataan. Selanjutnya, kita akan membagi datanya menjadi data latih dan data uji. Berdasarkan pola data, pembagian data latih dan data uji ditetapkan dengan proporsi 80%:20%.
+
+## Plot Data Latih
+
+```{r}
+train.ts <- ts(dt[1:87])
+plot.ts(train.ts, lty=1, xlab="waktu", ylab="Jumlah Penumpang", main="Plot Train")
+```
+
+Berdasarkan plot data deret waktu pada data latih di atas, terlihat data membentuk pola *seasonal* dan cenderung bergerak menyebar di sekitar nilai tengahnya 8e+05 sehingga bisa disimpulkan data tersebut stasioner dalam rataan.
+
+## Plot Data Uji
+
+```{r}
+test.ts <- ts(dt[88:109])
+plot.ts(test.ts, lty=1, xlab="waktu", ylab="Jumlah Penumpang", main="Plot Test")
+```
+
+# Uji Stasioneritas Data
+
+Selain dengan plot data deret waktu, akan dilakukan pengecekan stasioneritas data dengan plot ACF dan uji ADF.
+
+## Plot ACF
+
+```{r}
+acf(train.ts)
+```
+
+Berdasarkan plot ACF di atas, cenderung membentuk pola *cuts off* pada lag 8 sehingga menandakan data stasioner dalam rataan. Selain dengan plot ACF, akan dilakukan uji ADF untuk mengecek stasioneritas data.
+
+## Uji ADF
+
+```{r}
+tseries::adf.test(train.ts)
+```
+
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Berdasarkan uji ADF tersebut, didapat *p-value* sebesar 0.04375 yang lebih kecil dari taraf nyata 5% sehingga tolak $H_0$ dan menandakan bahwa data stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot time series dan plot ACF, dan plot ADF.
+
+## Plot Box-Cox
+
+```{r}
+index <- seq(1:87)
+bc = boxcox(train.ts~index, lambda = seq(0,5,by=1))
+#Nilai Rounded Lambda
+lambda <- bc$x[which.max(bc$y)]
+lambda
+#SK
+bc$x[bc$y > max(bc$y) - 1/2 * qchisq(.95,1)]
+```
+
+Plot Boxcox menunjukkan nilai *rounded value* ($\lambda$) optimum sebesar **2.12** dan pada selang kepercayaan 95% nilai memiliki batas bawah **1.31** dan batas atas **2.97**. Selang tersebut tidak memuat nilai satu sehingga dapat dikatakan bahwa data tidak stasioner dalam ragam.
+
+# Penanganan Ketidakstasioneran Data
+
+```{r}
+train.diff<-diff(train.ts,differences = 1) 
+plot.ts(train.diff, lty=1, xlab="waktu", ylab="Data Difference 1 Penumpang", main="Plot Difference Penumpang")
+```
+
+Kita mencoba untuk mengatasi ketidakstasioneran pada ragam dengan melakukan differencing sekali. Berdasarkan plot data deret waktu, terlihat bahwa data masih stasioner dalam rataan ditandai dengan data bergerak pada nilai tengah tertentu, tetapi masih terlihat pola musiman. Selanjutnya, akan dilakukan uji ADF untuk mengecek stasioneritas data.
+
+## Plot ACF
+
+```{r}
+acf(train.diff)
+```
+
+Berdasarkan plot tersebut, terlihat bahwa plot ACF cuts off pada lag ke 2. Hal ini menandakan data masih stasioner dalam rataan, namun masih terlihat adanya pola musiman.
+
+## Uji ADF
+
+```{r}
+tseries::adf.test(train.diff)
+```
+
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Berdasarkan uji ADF tersebut, didapat *p-value* sebesar 0.01 yang lebih kecil dari taraf nyata 5% sehingga tolak $H_0$ atau data masih stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot time series dan plot ACF. Selanjutnya, kita akan melakukan identifikasi model
+
+
+# Identifikasi Model
+
+## Plot ACF
+
+```{r}
+acf(train.diff)
+```
+
+Berdasarkan plot tersebut, terlihat bahwa plot ACF cenderung *cuts off* pada lag ke 2, sehingga jika plot PACF dianggap *tails off*, maka model tentatifnya adalah ARIMA(0,1,2).
+
+## Plot PACF
+
+```{r}
+pacf(train.diff)
+```
+
+Berdasarkan plot tersebut, terlihat bahwa plot PACF cenderung *tails off*, maka karena plot ACF dianggap *cuts off* pada lag 2, maka model tentatifnya adalah ARIMA(0,1,2).
+
+## Plot EACF
+
+```{r}
+eacf(train.diff)
+#terdapat 5 model tentatif
+#ARIMA(0,1,2), ARIMA(1,1,2), ARIMA(2,1,2), ARIMA(2,1,3) dan ARIMA(3,1,3)
+```
+
+Identifikasi model menggunakan plot EACF dilakukan dengan melihat ujung segitiga pada pola segitiga nol. Dalam hal ini model tentatif yang terbentuk adalah ARIMA(0,1,2), ARIMA(1,1,2), ARIMA(2,1,2), ARIMA(2,1,3) dan ARIMA(3,1,3).
+
+# Pendugaan Parameter Model Tentatif
+
+## ARIMA(0,1,2)
+
+```{r}
+model1.da=Arima(train.diff, order=c(0,0,2),method="ML")
+summary(model1.da) #AIC=2357.46
+lmtest::coeftest(model1.da) #seluruh parameter signifikan
+```
+
+## ARIMA(1,1,2)
+
+```{r}
+model2.da=Arima(train.diff, order=c(1,0,2),method="ML")
+summary(model2.da) #AIC=2359.46
+lmtest::coeftest(model2.da) #hanya ma2 yang signifikan
+```
+
+## ARIMA(2,1,2)
+
+```{r}
+model3.da=Arima(train.diff, order=c(2,0,2),method="ML")
+summary(model3.da) #AIC=2360.95
+lmtest::coeftest(model3.da) #tidak ada yang signifikan
+```
+
+## ARIMA(2,1,3)
+
+```{r}
+model4.da=Arima(train.diff, order=c(2,0,3),method="ML")
+summary(model4.da) #AIC=2346.48
+lmtest::coeftest(model4.da) #ma1 dan ma3 tidak signifikan
+```
+
+## ARIMA(3,1,3)
+
+```{r}
+model5.da=Arima(train.diff, order=c(3,0,3),method="ML")
+summary(model5.da) #AIC=2339.33 
+lmtest::coeftest(model5.da) #seluruh parameter signifikan
+```
+
+# Kesimpulan
+
+Berdasarkan pendugaan parameter di atas, nilai AIC terkecil dimiliki oleh model ARIMA(3,1,3) dan parameter model ARIMA(3,1,3) juga seluruhnya signifikan sehingga model yang dipilih adalah model ARIMA(3,1,3).
+
